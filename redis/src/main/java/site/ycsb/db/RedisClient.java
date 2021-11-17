@@ -63,6 +63,7 @@ public class RedisClient extends DB {
   public static final String TIMEOUT_PROPERTY = "redis.timeout";
 
   public static final String INDEX_KEY = "_indices";
+  public static final String LIST_KEY = "_mylists";
 
   public void init() throws DBException {
     Properties props = getProperties();
@@ -121,20 +122,34 @@ public class RedisClient extends DB {
   public Status read(String table, String key, Set<String> fields,
       Map<String, ByteIterator> result) {
     if (fields == null) {
-      StringByteIterator.putAllAsByteIterators(result, jedis.hgetAll(key));
+      for (String val : jedis.lrange(key, 0, -1)) {
+        String[] fieldSplit = val.split("=", 2);
+        String field = fieldSplit[0];
+        String value = fieldSplit[1];
+        result.put(field, new StringByteIterator(value));
+        //System.out.println("READALL: " + key + " " +  field + " " + value);
+      } 
     } else {
-      String[] fieldArray =
-          (String[]) fields.toArray(new String[fields.size()]);
-      List<String> values = jedis.hmget(key, fieldArray);
+      // get all the values by this key
+      List<String> values = jedis.lrange(key, 0, -1);
 
-      Iterator<String> fieldIterator = fields.iterator();
       Iterator<String> valueIterator = values.iterator();
 
-      while (fieldIterator.hasNext() && valueIterator.hasNext()) {
-        result.put(fieldIterator.next(),
-            new StringByteIterator(valueIterator.next()));
+      while (valueIterator.hasNext()) {
+        String val = valueIterator.next();
+        String[] fieldSplit = val.split("=", 2);
+        String field = fieldSplit[0];
+        String value = fieldSplit[1];
+
+        //System.out.println("READSOME: " + key + " " + field + value);
+        if (!fields.contains(field)) {
+          continue;
+        }
+        StringByteIterator valueByte = new StringByteIterator(value);
+        result.put(field, valueByte);
+        //System.out.println("READSOME: " + key + " " + field + valueByte);
       }
-      assert !fieldIterator.hasNext() && !valueIterator.hasNext();
+      assert !valueIterator.hasNext();
     }
     return result.isEmpty() ? Status.ERROR : Status.OK;
   }
@@ -142,12 +157,15 @@ public class RedisClient extends DB {
   @Override
   public Status insert(String table, String key,
       Map<String, ByteIterator> values) {
-    if (jedis.hmset(key, StringByteIterator.getStringMap(values))
-        .equals("OK")) {
-      jedis.zadd(INDEX_KEY, hash(key), key);
-      return Status.OK;
+
+    for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
+      String entryString = entry.toString();
+      Long res = jedis.lpush(key, entryString); 
+      //System.out.println("INSERT: " + entryString);
     }
-    return Status.ERROR;
+
+    jedis.zadd(INDEX_KEY, hash(key), key);
+    return Status.OK;
   }
 
   @Override
@@ -159,8 +177,23 @@ public class RedisClient extends DB {
   @Override
   public Status update(String table, String key,
       Map<String, ByteIterator> values) {
-    return jedis.hmset(key, StringByteIterator.getStringMap(values))
-        .equals("OK") ? Status.OK : Status.ERROR;
+    for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
+      String entryString = entry.toString();
+      boolean updated = false;
+      for (int i = 0; i < jedis.llen(key); ++i) {
+        String[] valEntry = jedis.lindex(key, i).split("=", 2);
+        if (valEntry[0].equals(entry.getKey())) {
+          jedis.lset(key, i, entryString);
+          updated = true;
+          break;
+        }
+      }
+      if (!updated) {
+        Long res = jedis.lpush(key, entryString);
+      }
+      //System.out.println("UPDATE: " + key + " " + entryString);
+    }
+    return Status.OK;
   }
 
   @Override
