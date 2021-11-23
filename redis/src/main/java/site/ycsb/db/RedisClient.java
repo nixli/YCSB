@@ -158,11 +158,15 @@ public class RedisClient extends DB {
   public Status insert(String table, String key,
       Map<String, ByteIterator> values) {
 
+
+    String[] lpushArgs = new String[values.size()];
+    int i = 0;
     for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
       String entryString = entry.toString();
-      Long res = jedis.lpush(key, entryString); 
+      lpushArgs[i++] = entryString;
       //System.out.println("INSERT: " + entryString);
     }
+    Long res = jedis.lpush(key, lpushArgs); 
 
     jedis.zadd(INDEX_KEY, hash(key), key);
     return Status.OK;

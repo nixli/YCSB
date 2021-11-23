@@ -35,7 +35,7 @@ workload=site.ycsb.workloads.CoreWorkload
 # The number of records in the table to be inserted in
 # the load phase or the number of records already in the 
 # table before the run phase.
-recordcount=100
+recordcount=1000000
 
 # There is no default setting for operationcount but it is
 # required to be set.
@@ -50,10 +50,10 @@ operationcount=300
 insertstart=0
 
 # The number of fields in a record
-fieldcount=100
+fieldcount=1000
 
 # The size of each field (in bytes)
-fieldlength=100
+fieldlength=4
 
 # Should read all fields
 readallfields=false
