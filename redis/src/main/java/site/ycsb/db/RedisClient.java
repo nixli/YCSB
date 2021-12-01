@@ -159,14 +159,16 @@ public class RedisClient extends DB {
       Map<String, ByteIterator> values) {
 
 
-    String[] lpushArgs = new String[values.size()];
-    int i = 0;
+    // String[] lpushArgs = new String[10];
+    // int i = 0;
     for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
       String entryString = entry.toString();
-      lpushArgs[i++] = entryString;
+      // lpushArgs[i++ % 10] = entryString;
+      // if (i % 10 == 0) {
+      jedis.lpush(key, entryString);
+      // }
       //System.out.println("INSERT: " + entryString);
     }
-    Long res = jedis.lpush(key, lpushArgs); 
 
     jedis.zadd(INDEX_KEY, hash(key), key);
     return Status.OK;
@@ -181,11 +183,12 @@ public class RedisClient extends DB {
   @Override
   public Status update(String table, String key,
       Map<String, ByteIterator> values) {
+    List<String> lvalues = jedis.lrange(key, 0, -1);
     for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
       String entryString = entry.toString();
       boolean updated = false;
-      for (int i = 0; i < jedis.llen(key); ++i) {
-        String[] valEntry = jedis.lindex(key, i).split("=", 2);
+      for (int i = 0; i < lvalues.size(); ++i) {
+        String[] valEntry = lvalues.get(i).split("=", 2);
         if (valEntry[0].equals(entry.getKey())) {
           jedis.lset(key, i, entryString);
           updated = true;

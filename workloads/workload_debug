@@ -35,12 +35,12 @@ workload=site.ycsb.workloads.CoreWorkload
 # The number of records in the table to be inserted in
 # the load phase or the number of records already in the 
 # table before the run phase.
-recordcount=1000
+recordcount=100
 
 # There is no default setting for operationcount but it is
 # required to be set.
 # The number of operations to use during the run phase.
-operationcount=2000
+operationcount=4000
 
 # The number of insertions to do, if different from recordcount.
 # Used with insertstart to grow an existing table.
@@ -50,10 +50,10 @@ operationcount=2000
 insertstart=0
 
 # The number of fields in a record
-fieldcount=2000
+fieldcount=1000
 
 # The size of each field (in bytes)
-fieldlength=280
+fieldlength=800
 
 # Should read all fields
 readallfields=true
@@ -62,24 +62,24 @@ readallfields=true
 writeallfields=false
 
 # The distribution used to choose the length of a field
-#fieldlengthdistribution=constant
-fieldlengthdistribution=uniform
+fieldlengthdistribution=constant
+#fieldlengthdistribution=uniform
 #fieldlengthdistribution=zipfian
 
 # What proportion of operations are reads
-readproportion=0.1
+readproportion=1
 
 # What proportion of operations are updates
-updateproportion=0.1
+updateproportion=0
 
 # What proportion of operations are inserts
-insertproportion=0.7
+insertproportion=0
 
 # What proportion of operations read then modify a record
-readmodifywriteproportion=0.1
+readmodifywriteproportion=0
 
 # What proportion of operations are scans
-scanproportion=0.0
+scanproportion=0
 
 # On a single scan, the maximum number of records to access
 maxscanlength=1000
